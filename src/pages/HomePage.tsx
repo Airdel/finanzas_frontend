@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, CalendarClock, CreditCard, Landmark, Loader2, LogOut, Palette, PiggyBank, Plus, Star, Trash2, WifiOff } from 'lucide-react';
+import { AlertTriangle, CalendarClock, CreditCard, Landmark, Loader2, LogOut, Palette, Plus, Star, Trash2, WifiOff } from 'lucide-react';
 import * as motion from 'motion/react-client';
 import { CardModal } from '../components/finance/CardModal';
 import { PayModal, type PayTarget } from '../components/finance/PayModal';
 import { QuickCapture } from '../components/finance/QuickCapture';
 import { MsiView } from '../components/finance/MsiView';
+import { AccountsSection } from '../components/finance/AccountsSection';
 import { QuincenasView } from '../components/finance/QuincenasView';
 import { Segmented } from '../components/ui/Field';
 import { StatusBadge } from '../components/finance/StatusBadge';
@@ -57,7 +58,6 @@ export function HomePage({ onOpenThemes }: { onOpenThemes: () => void }) {
   const pending = (overview?.upcoming ?? [])
     .map(g => ({ ...g, items: g.items.filter(i => i.remainingCents > 0) }))
     .filter(g => g.items.length > 0);
-  const otherAccounts = (accounts ?? []).filter(a => a.kind !== 'CREDIT_CARD');
 
   const removeTx = async (id: number, description: string) => {
     const ok = await confirm({ title: 'Borrar movimiento', message: description, confirmLabel: 'Borrar', tone: 'danger' });
@@ -164,16 +164,7 @@ export function HomePage({ onOpenThemes }: { onOpenThemes: () => void }) {
           </section>
         )}
 
-        {tab === 'tarjetas' && otherAccounts.length > 0 && (
-          <section className="space-y-3">
-            <SectionTitle icon={PiggyBank}>Débito y ahorro</SectionTitle>
-            <div className="flex flex-wrap gap-2">
-              {otherAccounts.map(a => (
-                <span key={a.id} className="glass-panel px-3 py-1.5 text-sm">{a.name}</span>
-              ))}
-            </div>
-          </section>
-        )}
+        {tab === 'tarjetas' && accounts && <AccountsSection />}
       </div>
 
       {overview && (
