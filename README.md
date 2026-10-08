@@ -2,6 +2,12 @@
 
 App (React 19 + Vite + Tailwind + zustand) que se empaqueta como APK de Android con [Capacitor](https://capacitorjs.com). Base visual de monmoncafé: temas fresa, matcha, lavanda, café y noche, con panel de vidrio.
 
+## Qué hace (Fase 1)
+
+- **Por pagar**: lo que debe cada tarjeta agrupado por la nómina que lo cubre (la del 30 paga Gold, LikeU, DiDi y Mercado Pago; la del 15 paga Nu), con botón **Pagar**.
+- **Tarjetas**: periodo abierto de cada una, días para pagar si compras hoy y ⭐ en la que da más días. Al tocarla se ven sus cortes, movimientos y la regla de compras del día de corte.
+- **Captura en 3 toques**: botón +, cuenta, monto en el teclado y Guardar. Categoría, descripción y fecha son opcionales. Al guardar avisa a qué corte entra.
+
 ## Desarrollo web
 
 ```bash

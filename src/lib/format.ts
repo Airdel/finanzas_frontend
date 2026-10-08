@@ -33,3 +33,21 @@ export function daysBetween(from: string, to: string): number {
   };
   return Math.round((toUtc(to) - toUtc(from)) / 86_400_000);
 }
+
+/** "1,234.5" / "1234.50" → 123450 cents; NaN when it is not a number. */
+export function parseCents(text: string): number {
+  const clean = text.replace(/[,\s$]/g, '');
+  if (!/^\d*(\.\d{0,2})?$/.test(clean) || clean === '' || clean === '.') return NaN;
+  const [whole, fraction = ''] = clean.split('.');
+  return Number(whole || '0') * 100 + Number(fraction.padEnd(2, '0'));
+}
+
+/** "hoy", "mañana", "en 5 días", "hace 2 días". */
+export function relativeDays(days: number): string {
+  if (days === 0) return 'hoy';
+  if (days === 1) return 'mañana';
+  if (days === -1) return 'ayer';
+  return days > 0 ? `en ${days} días` : `hace ${-days} días`;
+}
+
+export const shortDay = (value: string) => formatDay(value, { day: 'numeric', month: 'short' });
