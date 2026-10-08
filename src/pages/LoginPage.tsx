@@ -130,7 +130,7 @@ export function LoginPage({ onOpenThemes }: { onOpenThemes: () => void }) {
                   />
                 </div>
                 <p className="text-ink/30 text-xs mt-2">
-                  IP de Tailscale de la PC de oficina. Se completa como {normalizeApiUrlSafe(serverUrl) || 'http://IP:3001/api'}
+                  IP de Tailscale de la PC de oficina. Se completa como {normalizeApiUrlSafe(serverUrl) || 'http://IP:3101/api'}
                 </p>
               </div>
             ) : (

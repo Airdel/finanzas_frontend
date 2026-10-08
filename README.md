@@ -9,7 +9,7 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-La URL de la API sale de `VITE_API_URL` (por defecto `http://localhost:3001/api`) y se cambia en el login, en **Servidor**. Se guarda en el dispositivo.
+La URL de la API sale de `VITE_API_URL` (por defecto `http://localhost:3101/api`) y se cambia en el login, en **Servidor**. Se guarda en el dispositivo.
 
 ## App Android (S24 FE y Tab S10+)
 
@@ -24,11 +24,11 @@ La app no trae el backend: habla con la API de la PC de oficina **por Tailscale*
 ### 2. Instalar y conectar
 
 1. Instala Tailscale en el teléfono/tablet con la misma cuenta que la PC.
-2. Abre `http://<IP-Tailscale-de-la-PC>:3001/api/health` en el navegador del teléfono: debe responder `"status":"ok"`.
+2. Abre `http://<IP-Tailscale-de-la-PC>:3101/api/health` en el navegador del teléfono: debe responder `"status":"ok"`.
 3. Instala `app-debug.apk` (Android pedirá permitir origen desconocido).
-4. En el login escribe en **Servidor** la IP de Tailscale (`100.x.y.z` basta; se completa como `http://100.x.y.z:3001/api`) y entra.
+4. En el login escribe en **Servidor** la IP de Tailscale (`100.x.y.z` basta; se completa como `http://100.x.y.z:3101/api`) y entra.
 
-Si aparece *No se pudo conectar con el servidor*: revisa que Tailscale esté activo en ambos lados, que la API corra y que el firewall de Windows permita el puerto 3001.
+Si aparece *No se pudo conectar con el servidor*: revisa que Tailscale esté activo en ambos lados, que la API corra y que el firewall de Windows permita el puerto 3101.
 
 ### Notas técnicas
 
