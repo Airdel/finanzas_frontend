@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, GraduationCap, Loader2, PiggyBank, Plus, Receipt, Settings2, Trash2, Wallet } from 'lucide-react';
+import { Check, ChevronDown, GraduationCap, Send, Loader2, PiggyBank, Plus, Receipt, Settings2, Trash2, Wallet } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Field, Segmented, SubmitButton } from '../ui/Field';
 import { StatusBadge } from './StatusBadge';
@@ -17,25 +17,13 @@ export function QuincenasView() {
   const [editing, setEditing] = useState<PayPeriod | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [dispersing, setDispersing] = useState<PayPeriod | null>(null);
 
   if (!periods) {
     return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
   }
   const { settings, today } = periods;
   const expanded = openDate ?? periods.periods[0]?.payDate;
-
-  const savePayroll = async (period: PayPeriod) => {
-    setBusy(true);
-    try {
-      await api.post(`/pay-periods/${period.payDate}/savings`, {});
-      toast.success(`${formatCents(period.savingsCents - period.savedCents)} a Mercado Pago y Nu (50/50)`, 'Ahorro apartado');
-      await load();
-    } catch (err) {
-      notifyError(err, 'No se apartó el ahorro');
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const addTutoring = async () => {
     setBusy(true);
@@ -128,8 +116,7 @@ export function QuincenasView() {
             expanded={expanded === p.payDate}
             onToggle={() => setOpenDate(expanded === p.payDate ? '' : p.payDate)}
             onEdit={() => setEditing(p)}
-            onSave={() => savePayroll(p)}
-            busy={busy}
+            onDisperse={() => setDispersing(p)}
           />
         ))}
       </section>
@@ -194,22 +181,23 @@ export function QuincenasView() {
       </section>
 
       {editing && <PeriodModal period={editing} onClose={() => setEditing(null)} />}
+      {dispersing && <DisperseModal period={dispersing} today={today} onClose={() => setDispersing(null)} />}
       {settingsOpen && <SettingsModal settings={settings} onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }
 
-function PeriodCard({ period: p, today, expanded, onToggle, onEdit, onSave, busy }: {
+function PeriodCard({ period: p, today, expanded, onToggle, onEdit, onDisperse }: {
   period: PayPeriod;
   today: string;
   expanded: boolean;
   onToggle: () => void;
   onEdit: () => void;
-  onSave: () => void;
-  busy: boolean;
+  onDisperse: () => void;
 }) {
   const current = p.payDate <= today && today < p.endDate;
-  const toSave = p.savingsCents - p.savedCents;
+  const toSave = Math.max(0, p.savingsCents - p.savedCents);
+  const dispersed = p.cardsPendingCents === 0 && toSave === 0;
   return (
     <div className={cn('glass-panel', current && 'border-primary/40')}>
       <button onClick={onToggle} className="w-full p-4 flex items-center justify-between gap-3 text-left">
@@ -217,6 +205,7 @@ function PeriodCard({ period: p, today, expanded, onToggle, onEdit, onSave, busy
           <p className="font-headline font-bold flex items-center gap-2">
             Nómina del {shortDay(p.payDate)}
             {current && <span className="px-2 py-0.5 rounded-full text-[11px] bg-primary/10 text-primary">Actual</span>}
+            {p.payDate <= today && dispersed && <span className="px-2 py-0.5 rounded-full text-[11px] bg-secondary/15 text-secondary">Dispersada</span>}
           </p>
           <p className="text-xs text-ink/50">Cubre pagos del {shortDay(p.payDate)} al {shortDay(addDays(p.endDate, -1))}</p>
         </div>
@@ -235,6 +224,9 @@ function PeriodCard({ period: p, today, expanded, onToggle, onEdit, onSave, busy
                 <span className="text-ink/70 min-w-0 truncate flex items-center gap-2">
                   {c.accountName} · paga {shortDay(c.paymentDate)}
                   {c.status !== 'OPEN' && c.status !== 'EMPTY' && <StatusBadge status={c.status} />}
+                  {c.status === 'OPEN' && c.paymentsCents > 0 && (
+                    <span className="text-[11px] text-secondary font-bold">{c.remainingCents === 0 ? 'pagada' : `pagado ${formatCents(c.paymentsCents)}`}</span>
+                  )}
                 </span>
                 <span className="font-mono whitespace-nowrap">
                   −{formatCents(c.statementCents)}
@@ -255,18 +247,11 @@ function PeriodCard({ period: p, today, expanded, onToggle, onEdit, onSave, busy
           {p.cardsPendingCents !== p.cardsCents && (
             <p className="text-xs text-ink/50">Ya pagaste {formatCents(p.cardsCents - p.cardsPendingCents)} de tarjetas de esta quincena.</p>
           )}
-          {p.savingsCents > 0 && (
-            toSave > 0 ? (
-              <button
-                onClick={onSave}
-                disabled={busy || p.payDate > today}
-                className="w-full py-2.5 rounded-lg bg-secondary/15 text-secondary font-bold disabled:opacity-40"
-              >
-                {p.payDate > today ? `Apartar ${formatCents(toSave)} cuando llegue` : `Apartar ${formatCents(toSave)} (50/50 MP y Nu)`}
-              </button>
-            ) : (
-              <p className="text-xs text-secondary font-bold">Ahorro apartado: {formatCents(p.savedCents)}</p>
-            )
+          {p.savedCents > 0 && <p className="text-xs text-secondary">Ahorro apartado: {formatCents(p.savedCents)}</p>}
+          {p.payDate <= today && !dispersed && (
+            <button onClick={onDisperse} className="w-full py-2.5 rounded-lg bg-secondary/15 text-secondary font-bold flex items-center justify-center gap-2">
+              <Send className="w-4 h-4" /> Dispersar quincena · {formatCents(p.cardsPendingCents + toSave)}
+            </button>
           )}
         </div>
       )}
@@ -431,5 +416,90 @@ function FixedForm() {
       </div>
       <SubmitButton onClick={save} disabled={!valid} busy={busy}>Guardar fijo{debit ? ` (desde ${debit.name})` : ''}</SubmitButton>
     </div>
+  );
+}
+
+/**
+ * Registers what was already done with this payroll: card payments and the
+ * savings transfer. Every line can be unchecked or adjusted to the real amount.
+ */
+function DisperseModal({ period, today, onClose }: { period: PayPeriod; today: string; onClose: () => void }) {
+  const load = useFinanceStore(s => s.load);
+  const toSave = Math.max(0, period.savingsCents - period.savedCents);
+  const initial = [
+    ...period.cards
+      .filter(c => c.remainingCents > 0)
+      .map(c => ({
+        key: `card-${c.accountId}-${c.cutDate}`,
+        label: `${c.accountName} · corte ${shortDay(c.cutDate)}`,
+        hint: c.status === 'OPEN' ? 'Corte aún abierto: puede seguir sumando' : `Vence ${shortDay(c.paymentDate)}`,
+        amount: centsText(c.remainingCents),
+        checked: c.status !== 'OPEN',
+        card: c,
+      })),
+    ...(toSave > 0
+      ? [{ key: 'savings', label: 'Ahorro a Mercado Pago y Nu (50/50)', hint: 'Lo que moviste a tus cuentas de ahorro', amount: centsText(toSave), checked: true, card: null }]
+      : []),
+  ];
+  const [rows, setRows] = useState(initial);
+  const [date, setDate] = useState(today);
+  const [busy, setBusy] = useState(false);
+  const selected = rows.filter(r => r.checked);
+  const valid = selected.length > 0 && selected.every(r => parseCents(r.amount) > 0);
+  const total = selected.reduce((s, r) => s + (parseCents(r.amount) || 0), 0);
+
+  const update = (key: string, patch: Partial<(typeof rows)[number]>) => setRows(rs => rs.map(r => (r.key === key ? { ...r, ...patch } : r)));
+
+  const save = async () => {
+    setBusy(true);
+    let done = 0;
+    try {
+      for (const r of selected) {
+        const amountCents = parseCents(r.amount);
+        if (r.card) await api.post(`/cards/${r.card.accountId}/payments`, { cutDate: r.card.cutDate, amountCents, date });
+        else await api.post(`/pay-periods/${period.payDate}/savings`, { amountCents, date });
+        done++;
+      }
+      toast.success(`${formatCents(total)} registrados`, `Nómina del ${shortDay(period.payDate)} dispersada`);
+      onClose();
+    } catch (err) {
+      notifyError(err, done > 0 ? `Se registraron ${done} de ${selected.length}` : 'No se registró');
+      setBusy(false);
+    } finally {
+      void load();
+    }
+  };
+
+  return (
+    <Modal title={`Dispersar nómina del ${shortDay(period.payDate)}`} onClose={onClose}>
+      <div className="space-y-4">
+        <p className="text-sm text-ink/60">Marca lo que ya hiciste con esta nómina y ajusta el monto si fue distinto.</p>
+        <ul className="space-y-3">
+          {rows.map(r => (
+            <li key={r.key} className="flex items-center gap-3">
+              <button
+                onClick={() => update(r.key, { checked: !r.checked })}
+                className={cn('w-6 h-6 rounded-md border flex items-center justify-center shrink-0', r.checked ? 'bg-secondary border-secondary text-on-secondary' : 'border-ink/20')}
+                aria-label={r.checked ? 'Quitar' : 'Incluir'}
+              >
+                {r.checked && <Check className="w-4 h-4" />}
+              </button>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{r.label}</p>
+                <p className="text-xs text-ink/50 truncate">{r.hint}</p>
+              </div>
+              <input
+                inputMode="decimal"
+                value={r.amount}
+                onChange={e => update(r.key, { amount: e.target.value, checked: true })}
+                className="w-28 bg-ink/5 border border-ink/10 rounded-lg py-1.5 px-2 text-right font-mono text-sm focus:outline-none focus:border-primary/50"
+              />
+            </li>
+          ))}
+        </ul>
+        <Field label="Fecha en que lo hiciste" type="date" value={date} max={today} onChange={e => setDate(e.target.value)} />
+        <SubmitButton onClick={save} disabled={!valid} busy={busy}>Registrar {formatCents(total)}</SubmitButton>
+      </div>
+    </Modal>
   );
 }
