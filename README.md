@@ -11,6 +11,16 @@ npm run dev        # http://localhost:5173
 
 La URL de la API sale de `VITE_API_URL` (por defecto `http://localhost:3101/api`) y se cambia en el login, en **Servidor**. Se guarda en el dispositivo.
 
+## Web en GitHub Pages
+
+`https://airdel.github.io/finanzas_frontend/` se publica sola en cada push a `main` (workflow `pages.yml`).
+
+Configuración, una sola vez:
+1. **Settings → Pages → Source: GitHub Actions.**
+2. **Settings → Secrets and variables → Actions → Variables → `API_URL`** con la URL HTTPS que imprime `install-service.ps1` del backend, por ejemplo `https://darien-pc.tailXXXX.ts.net:8443/api`.
+
+Pages es `https`, así que la API tiene que ir por HTTPS (`tailscale serve`). Una URL `http://100.x…` la bloquearía el navegador. El dispositivo debe tener Tailscale encendido. El código es público pero no lleva datos ni secretos: todo vive en la API, que solo se alcanza por el tailnet.
+
 ## App Android (S24 FE y Tab S10+)
 
 La app no trae el backend: habla con la API de la PC de oficina **por Tailscale**.
