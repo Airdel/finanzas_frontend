@@ -4,6 +4,9 @@ import * as motion from 'motion/react-client';
 import { CardModal } from '../components/finance/CardModal';
 import { PayModal, type PayTarget } from '../components/finance/PayModal';
 import { QuickCapture } from '../components/finance/QuickCapture';
+import { MsiView } from '../components/finance/MsiView';
+import { QuincenasView } from '../components/finance/QuincenasView';
+import { Segmented } from '../components/ui/Field';
 import { StatusBadge } from '../components/finance/StatusBadge';
 import { api } from '../lib/api';
 import { logout } from '../lib/auth';
@@ -15,13 +18,34 @@ import type { CardSummary, PayrollGroup } from '../lib/types';
 import { useAuthStore } from '../store/auth';
 import { useFinanceStore } from '../store/finance';
 
-/** Fase 1: what each payroll has to pay, the cards' open periods and quick capture. */
+type Tab = 'tarjetas' | 'quincenas' | 'msi';
+const TAB_KEY = 'finanzas.tab';
+
+function savedTab(): Tab {
+  try {
+    const value = localStorage.getItem(TAB_KEY);
+    return value === 'quincenas' || value === 'msi' ? value : 'tarjetas';
+  } catch {
+    return 'tarjetas';
+  }
+}
+
+/** Cards (Fase 1), quincenas with savings and MSI (Fase 2), plus quick capture. */
 export function HomePage({ onOpenThemes }: { onOpenThemes: () => void }) {
   const user = useAuthStore(state => state.user);
   const { accounts, overview, recent, error, load } = useFinanceStore();
   const [capturing, setCapturing] = useState(false);
   const [cardId, setCardId] = useState<number | null>(null);
   const [paying, setPaying] = useState<PayTarget | null>(null);
+  const [tab, setTabState] = useState<Tab>(savedTab);
+  const setTab = (next: Tab) => {
+    setTabState(next);
+    try {
+      localStorage.setItem(TAB_KEY, next);
+    } catch {
+      // private mode: the tab just isn't remembered
+    }
+  };
 
   useEffect(() => {
     void load();
@@ -75,11 +99,26 @@ export function HomePage({ onOpenThemes }: { onOpenThemes: () => void }) {
           </div>
         )}
 
+        {overview && (
+          <Segmented
+            value={tab}
+            onChange={setTab}
+            options={[
+              { value: 'tarjetas', label: 'Tarjetas' },
+              { value: 'quincenas', label: 'Quincenas' },
+              { value: 'msi', label: 'MSI' },
+            ]}
+          />
+        )}
+
+        {tab === 'quincenas' && overview && <QuincenasView />}
+        {tab === 'msi' && overview && <MsiView />}
+
         {!overview && !error && (
           <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
         )}
 
-        {overview && today && (
+        {tab === 'tarjetas' && overview && today && (
           <>
             <section className="space-y-3">
               <SectionTitle icon={CalendarClock}>Por pagar · hoy {shortDay(today)}</SectionTitle>
@@ -102,7 +141,7 @@ export function HomePage({ onOpenThemes }: { onOpenThemes: () => void }) {
           </>
         )}
 
-        {recent && (
+        {tab === 'tarjetas' && recent && (
           <section className="space-y-3">
             <SectionTitle icon={Landmark}>Movimientos recientes</SectionTitle>
             <div className="glass-panel divide-y divide-ink/5">
@@ -111,12 +150,12 @@ export function HomePage({ onOpenThemes }: { onOpenThemes: () => void }) {
                 <div key={t.id} className="px-4 py-2.5 flex items-center gap-3 text-sm">
                   <div className="flex-1 min-w-0">
                     <p className="truncate font-medium">{t.paysCutDate ? `Pago corte ${shortDay(t.paysCutDate)}` : t.description}</p>
-                    <p className="text-xs text-ink/40 truncate">{shortDay(t.date)} · {t.account?.name}</p>
+                    <p className="text-xs text-ink/40 truncate">{shortDay(t.date)} · {t.account?.name}{t.category === 'msi' && t.note ? ` · ${t.note}` : ''}</p>
                   </div>
                   <span className={cn('font-mono', t.amountCents > 0 && 'text-secondary')}>
                     {t.amountCents > 0 ? '+' : '−'}{formatCents(Math.abs(t.amountCents))}
                   </span>
-                  <button onClick={() => removeTx(t.id, t.description)} className="p-1.5 text-ink/30 hover:text-error" aria-label="Borrar">
+                  <button onClick={() => removeTx(t.id, t.category === 'msi' ? `${t.description} (también borra su plan MSI)` : t.description)} className="p-1.5 text-ink/30 hover:text-error" aria-label="Borrar">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -125,7 +164,7 @@ export function HomePage({ onOpenThemes }: { onOpenThemes: () => void }) {
           </section>
         )}
 
-        {otherAccounts.length > 0 && (
+        {tab === 'tarjetas' && otherAccounts.length > 0 && (
           <section className="space-y-3">
             <SectionTitle icon={PiggyBank}>Débito y ahorro</SectionTitle>
             <div className="flex flex-wrap gap-2">

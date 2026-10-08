@@ -94,6 +94,12 @@ export function CardModal({ card, onClose }: { card: CardSummary; onClose: () =>
                   <span className="text-ink/60">Compras ({s.chargeCount})</span>
                   <span className="font-mono">{formatCents(s.chargesCents)}</span>
                 </div>
+                {s.msiCents > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-ink/60">Cuotas MSI ({s.installments.length})</span>
+                    <span className="font-mono">{formatCents(s.msiCents)}</span>
+                  </div>
+                )}
                 {s.creditsCents > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="text-ink/60">Devoluciones</span>
@@ -121,7 +127,17 @@ export function CardModal({ card, onClose }: { card: CardSummary; onClose: () =>
               )}
 
               <ul className="divide-y divide-ink/5">
-                {s.transactions.length === 0 && <li className="py-4 text-center text-sm text-ink/40">Sin movimientos en este corte</li>}
+                {s.installments.map(i => (
+                  <li key={`msi-${i.planId}`} className="py-2 flex items-center gap-3 text-sm">
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate">{i.description}</p>
+                      <p className="text-xs text-ink/40">{i.settlement ? 'Liquidación MSI' : `MSI cuota ${i.number} de ${i.months}`}</p>
+                    </div>
+                    <span className="font-mono">−{formatCents(i.amountCents)}</span>
+                    <span className="w-7" />
+                  </li>
+                ))}
+                {s.transactions.length === 0 && s.installments.length === 0 && <li className="py-4 text-center text-sm text-ink/40">Sin movimientos en este corte</li>}
                 {s.transactions.map(t => (
                   <li key={t.id} className="py-2 flex items-center gap-3 text-sm">
                     <div className="flex-1 min-w-0">
