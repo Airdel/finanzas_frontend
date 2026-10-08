@@ -33,7 +33,7 @@ export function LoginPage({ onOpenThemes }: { onOpenThemes: () => void }) {
     }
 
     try {
-      const res = await api.post('/auth/login', { email, password });
+      const res = await api.post('/auth/login', { email: email.trim().toLowerCase(), password });
       // NestJS TransformInterceptor wraps the response in a 'data' object
       const { user, accessToken, refreshToken } = res.data.data ? res.data.data : res.data;
       setAuth(user, accessToken, refreshToken);
@@ -89,6 +89,8 @@ export function LoginPage({ onOpenThemes }: { onOpenThemes: () => void }) {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/40" />
                 <input 
                   type="email" 
+                  autoCapitalize="none"
+                  autoCorrect="off"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   className="w-full bg-ink/5 border border-ink/10 rounded-xl py-3 pl-11 pr-4 text-ink placeholder-ink/20 focus:outline-none focus:border-primary/50 focus:bg-ink/5 transition-all"

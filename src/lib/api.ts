@@ -20,7 +20,9 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // A 401 from login/refresh is a real answer (bad credentials), not an expired session
+    const isAuthCall = /\/auth\/(login|refresh)$/.test(originalRequest?.url ?? '');
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthCall) {
       originalRequest._retry = true;
       try {
         const auth = useAuthStore.getState();
