@@ -34,6 +34,7 @@ function savedTab(): Tab {
 /** Cards (Fase 1), quincenas with savings and MSI (Fase 2), plus quick capture. */
 export function HomePage({ onOpenThemes }: { onOpenThemes: () => void }) {
   const user = useAuthStore(state => state.user);
+  const passwordRequired = useAuthStore(state => state.passwordRequired);
   const { accounts, overview, recent, error, load } = useFinanceStore();
   const [capturing, setCapturing] = useState(false);
   const [cardId, setCardId] = useState<number | null>(null);
@@ -82,9 +83,11 @@ export function HomePage({ onOpenThemes }: { onOpenThemes: () => void }) {
             <button onClick={onOpenThemes} className="p-2.5 rounded-full glass-panel text-ink/60 hover:text-primary" aria-label="Temas">
               <Palette className="w-5 h-5" />
             </button>
-            <button onClick={logout} className="p-2.5 rounded-full glass-panel text-ink/60 hover:text-error" aria-label="Cerrar sesión">
-              <LogOut className="w-5 h-5" />
-            </button>
+            {passwordRequired && (
+              <button onClick={logout} className="p-2.5 rounded-full glass-panel text-ink/60 hover:text-error" aria-label="Cerrar sesión">
+                <LogOut className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </header>
 
