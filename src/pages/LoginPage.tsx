@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AxiosError } from 'axios';
 import { Wallet, Lock, Mail, Loader2, Palette, Server } from 'lucide-react';
 import { api } from '../lib/api';
+import { openSession } from '../lib/auth';
 import { getErrorMessage } from '../lib/errors';
 import { getApiUrl, hasCustomApiUrl, isNativeApp, normalizeApiUrl, setApiUrl } from '../lib/server';
 import { useAuthStore } from '../store/auth';
@@ -33,6 +34,11 @@ export function LoginPage({ onOpenThemes }: { onOpenThemes: () => void }) {
     }
 
     try {
+      // Empty password: enter without one if the server allows it
+      if (!password) {
+        if (!(await openSession())) setError('Este servidor pide correo y contraseña');
+        return;
+      }
       const res = await api.post('/auth/login', { email: email.trim().toLowerCase(), password });
       // NestJS TransformInterceptor wraps the response in a 'data' object
       const { user, accessToken, refreshToken } = res.data.data ? res.data.data : res.data;
@@ -108,7 +114,7 @@ export function LoginPage({ onOpenThemes }: { onOpenThemes: () => void }) {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   className="w-full bg-ink/5 border border-ink/10 rounded-xl py-3 pl-11 pr-4 text-ink placeholder-ink/20 focus:outline-none focus:border-primary/50 focus:bg-ink/5 transition-all"
-                  placeholder="••••••••"
+                  placeholder="Vacía si el servidor no la pide"
                 />
               </div>
             </div>
