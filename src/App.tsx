@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react';
 import { ThemePicker } from './components/ui/ThemePicker';
 import { DialogHost } from './components/ui/DialogHost';
 import { LoginPage } from './pages/LoginPage';
+import { UnreachableScreen } from './pages/UnreachableScreen';
 import { HomePage } from './pages/HomePage';
 import { useAuthStore } from './store/auth';
 import { openSession } from './lib/auth';
@@ -14,8 +15,11 @@ function App() {
   const [showThemes, setShowThemes] = useState(false);
   const openThemes = () => setShowThemes(true);
   // Without a session, first try to enter without a password; the login
-  // screen only shows if the server asks for one or can't be reached
+  // screen only shows if the server asks for one. When the PC doesn't answer
+  // the app says so instead of showing a login that wouldn't help.
   const [opening, setOpening] = useState(!accessToken);
+  const [unreachable, setUnreachable] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   // Sends captures made while the PC was off as soon as it answers again
   useEffect(() => (accessToken ? startOfflineSync(() => void useFinanceStore.getState().load()) : undefined), [accessToken]);
@@ -24,12 +28,18 @@ function App() {
     if (accessToken) return;
     let active = true;
     openSession()
-      .catch(() => false)
+      .then(() => active && setUnreachable(false))
+      .catch(() => active && setUnreachable(true))
       .finally(() => active && setOpening(false));
     return () => {
       active = false;
     };
-  }, [accessToken]);
+  }, [accessToken, attempt]);
+
+  const retry = () => {
+    setOpening(true);
+    setAttempt(n => n + 1);
+  };
 
   return (
     <>
@@ -39,6 +49,8 @@ function App() {
         <div className="min-h-[100dvh] flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
+      ) : unreachable ? (
+        <UnreachableScreen onRetry={retry} onLogin={() => setUnreachable(false)} />
       ) : (
         <LoginPage onOpenThemes={openThemes} />
       )}
