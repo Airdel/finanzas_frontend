@@ -6,6 +6,8 @@ import { LoginPage } from './pages/LoginPage';
 import { HomePage } from './pages/HomePage';
 import { useAuthStore } from './store/auth';
 import { openSession } from './lib/auth';
+import { startOfflineSync } from './lib/offline';
+import { useFinanceStore } from './store/finance';
 
 function App() {
   const accessToken = useAuthStore(state => state.accessToken);
@@ -14,6 +16,9 @@ function App() {
   // Without a session, first try to enter without a password; the login
   // screen only shows if the server asks for one or can't be reached
   const [opening, setOpening] = useState(!accessToken);
+
+  // Sends captures made while the PC was off as soon as it answers again
+  useEffect(() => (accessToken ? startOfflineSync(() => void useFinanceStore.getState().load()) : undefined), [accessToken]);
 
   useEffect(() => {
     if (accessToken) return;
