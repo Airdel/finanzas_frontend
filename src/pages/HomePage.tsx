@@ -18,6 +18,7 @@ import { getApiUrl } from '../lib/server';
 import type { CardSummary, PayrollGroup } from '../lib/types';
 import { useAuthStore } from '../store/auth';
 import { useFinanceStore } from '../store/finance';
+import { ConnectionBanner } from '../components/layout/ConnectionBanner';
 
 type Tab = 'tarjetas' | 'quincenas' | 'msi';
 const TAB_KEY = 'finanzas.tab';
@@ -74,6 +75,7 @@ export function HomePage({ onOpenThemes }: { onOpenThemes: () => void }) {
   return (
     <div className="min-h-[100dvh] text-ink p-4 sm:p-8 pt-[calc(1rem+var(--safe-area-inset-top,env(safe-area-inset-top,0px)))] pb-28">
       <div className="max-w-3xl mx-auto space-y-6">
+        <ConnectionBanner />
         <header className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="font-label text-ink/40 text-xs uppercase tracking-widest">Finanzas Quincenales</p>
