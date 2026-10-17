@@ -4,6 +4,7 @@ import * as motion from 'motion/react-client';
 import { CardModal } from '../components/finance/CardModal';
 import { PayModal, type PayTarget } from '../components/finance/PayModal';
 import { QuickCapture } from '../components/finance/QuickCapture';
+import { EditTransactionModal } from '../components/finance/EditTransactionModal';
 import { MsiView } from '../components/finance/MsiView';
 import { AccountsSection } from '../components/finance/AccountsSection';
 import { QuincenasView } from '../components/finance/QuincenasView';
@@ -15,7 +16,7 @@ import { cn } from '../lib/cn';
 import { confirm, notifyError } from '../lib/dialogs';
 import { daysBetween, formatCents, relativeDays, shortDay } from '../lib/format';
 import { getApiUrl } from '../lib/server';
-import type { CardSummary, PayrollGroup } from '../lib/types';
+import type { CardSummary, PayrollGroup, Transaction } from '../lib/types';
 import { useAuthStore } from '../store/auth';
 import { useFinanceStore } from '../store/finance';
 import { ConnectionBanner } from '../components/layout/ConnectionBanner';
@@ -40,6 +41,7 @@ export function HomePage({ onOpenThemes }: { onOpenThemes: () => void }) {
   const [capturing, setCapturing] = useState(false);
   const [cardId, setCardId] = useState<number | null>(null);
   const [paying, setPaying] = useState<PayTarget | null>(null);
+  const [editing, setEditing] = useState<Transaction | null>(null);
   const [tab, setTabState] = useState<Tab>(savedTab);
   const setTab = (next: Tab) => {
     setTabState(next);
@@ -153,10 +155,15 @@ export function HomePage({ onOpenThemes }: { onOpenThemes: () => void }) {
               {recent.length === 0 && <p className="p-4 text-sm text-ink/40 text-center">Aún no hay movimientos. Toca + para capturar el primero.</p>}
               {recent.map(t => (
                 <div key={t.id} className="px-4 py-2.5 flex items-center gap-3 text-sm">
-                  <div className="flex-1 min-w-0">
+                  <button
+                    onClick={() => t.category !== 'msi' && setEditing(t)}
+                    disabled={t.category === 'msi'}
+                    className="flex-1 min-w-0 text-left"
+                    aria-label={t.category === 'msi' ? undefined : `Corregir ${t.description}`}
+                  >
                     <p className="truncate font-medium">{t.paysCutDate ? `Pago corte ${shortDay(t.paysCutDate)}` : t.description}</p>
                     <p className="text-xs text-ink/40 truncate">{shortDay(t.date)} · {t.account?.name}{t.category === 'msi' && t.note ? ` · ${t.note}` : ''}</p>
-                  </div>
+                  </button>
                   <span className={cn('font-mono', t.amountCents > 0 && 'text-secondary')}>
                     {t.amountCents > 0 ? '+' : '−'}{formatCents(Math.abs(t.amountCents))}
                   </span>
@@ -185,6 +192,7 @@ export function HomePage({ onOpenThemes }: { onOpenThemes: () => void }) {
       {capturing && <QuickCapture onClose={() => setCapturing(false)} />}
       {selectedCard && <CardModal key={selectedCard.id} card={selectedCard} onClose={() => setCardId(null)} />}
       {paying && <PayModal target={paying} onClose={() => setPaying(null)} />}
+      {editing && <EditTransactionModal transaction={editing} onClose={() => setEditing(null)} />}
     </div>
   );
 }
