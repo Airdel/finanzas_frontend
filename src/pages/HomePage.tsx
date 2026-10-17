@@ -6,6 +6,7 @@ import { PayModal, type PayTarget } from '../components/finance/PayModal';
 import { QuickCapture } from '../components/finance/QuickCapture';
 import { MsiView } from '../components/finance/MsiView';
 import { AccountsSection } from '../components/finance/AccountsSection';
+import { BalanceCutSection } from '../components/finance/BalanceCutSection';
 import { QuincenasView } from '../components/finance/QuincenasView';
 import { Segmented } from '../components/ui/Field';
 import { StatusBadge } from '../components/finance/StatusBadge';
@@ -170,6 +171,7 @@ export function HomePage({ onOpenThemes }: { onOpenThemes: () => void }) {
         )}
 
         {tab === 'tarjetas' && accounts && <AccountsSection />}
+        {tab === 'tarjetas' && overview && <BalanceCutSection />}
       </div>
 
       {overview && (
