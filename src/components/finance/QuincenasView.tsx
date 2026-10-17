@@ -232,7 +232,7 @@ function PeriodCard({ period: p, today, expanded, onToggle, onEdit, onDisperse }
                   )}
                 </span>
                 <span className="font-mono whitespace-nowrap">
-                  −{formatCents(c.statementCents)}
+                  −{formatCents(p.paidBeforeCut ? c.remainingCents : c.statementCents)}
                   {c.msiCents > 0 && <span className="block text-[11px] text-ink/40 text-right">MSI {formatCents(c.msiCents)}</span>}
                 </span>
               </div>
@@ -240,6 +240,11 @@ function PeriodCard({ period: p, today, expanded, onToggle, onEdit, onDisperse }
           </div>
           <Line label={p.savingsManual ? 'Ahorro (fijado a mano)' : 'Ahorro planeado'} value={`−${formatCents(p.savingsCents)}`} onEdit={onEdit} />
           {p.fixed.map(f => <Line key={`${f.id}-${f.date}`} label={`${f.name} · ${shortDay(f.date)}`} value={`−${formatCents(f.amountCents)}`} />)}
+          {p.balanceCut && (
+            <p className="text-xs text-ink/60 rounded-lg bg-primary/5 p-2">
+              Según tu corte del {shortDay(p.balanceCut.date)}: {formatCents(p.balanceCut.cashCents)} en débito, menos lo que aún vence antes de la siguiente nómina. Lo de arriba es el plan original.
+            </p>
+          )}
           <div className="flex items-center justify-between pt-2 border-t border-ink/10 font-bold">
             <span className="flex items-center gap-2"><Wallet className="w-4 h-4" /> Disponible</span>
             <span className={cn('font-mono text-lg', p.availableCents < 0 && 'text-error')}>{formatCents(p.availableCents)}</span>
@@ -247,7 +252,7 @@ function PeriodCard({ period: p, today, expanded, onToggle, onEdit, onDisperse }
           {p.tutoringCount > 0 && (
             <p className="text-xs text-ink/50">Tutorías: {p.tutoringCount} · {formatCents(p.tutoringCents)} directo a OpenBank (no suman al disponible).</p>
           )}
-          {p.cardsPendingCents !== p.cardsCents && (
+          {!p.paidBeforeCut && p.cardsPendingCents !== p.cardsCents && (
             <p className="text-xs text-ink/50">Ya pagaste {formatCents(p.cardsCents - p.cardsPendingCents)} de tarjetas de esta quincena.</p>
           )}
           {p.savedCents > 0 && <p className="text-xs text-secondary">Ahorro apartado: {formatCents(p.savedCents)}</p>}

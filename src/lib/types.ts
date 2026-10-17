@@ -183,6 +183,10 @@ export interface PayPeriod {
   fixedCents: number;
   tutoringCents: number;
   tutoringCount: number;
+  /** Corte de saldos inside this quincena: the available comes from the debit cash it reported */
+  balanceCut: { date: string; cashCents: number } | null;
+  /** After a corte: cards already paid don't count here */
+  paidBeforeCut: boolean;
   availableCents: number;
 }
 
