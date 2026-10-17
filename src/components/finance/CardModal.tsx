@@ -3,11 +3,12 @@ import { ChevronLeft, ChevronRight, Loader2, Trash2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { StatusBadge } from './StatusBadge';
 import { PayModal, type PayTarget } from './PayModal';
+import { EditTransactionModal } from './EditTransactionModal';
 import { api } from '../../lib/api';
 import { cn } from '../../lib/cn';
 import { confirm, notifyError } from '../../lib/dialogs';
 import { formatCents, shortDay } from '../../lib/format';
-import type { CardSummary, StatementDetail } from '../../lib/types';
+import type { CardSummary, StatementDetail, Transaction } from '../../lib/types';
 import { unwrap } from '../../lib/unwrap';
 import { useFinanceStore } from '../../store/finance';
 
@@ -17,6 +18,7 @@ export function CardModal({ card, onClose }: { card: CardSummary; onClose: () =>
   const [index, setIndex] = useState(0);
   const [detail, setDetail] = useState<StatementDetail | null>(null);
   const [paying, setPaying] = useState<PayTarget | null>(null);
+  const [editing, setEditing] = useState<Transaction | null>(null);
   const [cutDayNext, setCutDayNext] = useState(card.cutDayPurchasesNext);
   const cutDate = card.statements[index].cutDate;
 
@@ -140,10 +142,10 @@ export function CardModal({ card, onClose }: { card: CardSummary; onClose: () =>
                 {s.transactions.length === 0 && s.installments.length === 0 && <li className="py-4 text-center text-sm text-ink/40">Sin movimientos en este corte</li>}
                 {s.transactions.map(t => (
                   <li key={t.id} className="py-2 flex items-center gap-3 text-sm">
-                    <div className="flex-1 min-w-0">
+                    <button onClick={() => setEditing(t)} className="flex-1 min-w-0 text-left" aria-label={`Corregir ${t.description}`}>
                       <p className="truncate">{t.paysCutDate ? 'Pago a tarjeta' : t.description}</p>
                       <p className="text-xs text-ink/40">{shortDay(t.date)}{t.category && !t.paysCutDate ? ` · ${t.category}` : ''}</p>
-                    </div>
+                    </button>
                     <span className={cn('font-mono', t.amountCents > 0 && 'text-secondary')}>
                       {t.amountCents > 0 ? '+' : '−'}{formatCents(Math.abs(t.amountCents))}
                     </span>
@@ -166,6 +168,13 @@ export function CardModal({ card, onClose }: { card: CardSummary; onClose: () =>
         </div>
       </Modal>
       {paying && <PayModal target={paying} onClose={() => setPaying(null)} onPaid={fetchDetail} />}
+      {editing && (
+        <EditTransactionModal
+          transaction={{ ...editing, account: editing.account ?? { id: card.id, slug: card.slug, name: card.name, kind: 'CREDIT_CARD' } }}
+          onClose={() => setEditing(null)}
+          onSaved={fetchDetail}
+        />
+      )}
     </>
   );
 }

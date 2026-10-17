@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Delete, Loader2, Star } from 'lucide-react';
 import { Modal } from '../ui/Modal';
-import { api } from '../../lib/api';
 import { cn } from '../../lib/cn';
 import { notifyError, toast } from '../../lib/dialogs';
 import { daysBetween, formatCents, parseCents, relativeDays, shortDay } from '../../lib/format';
 import type { CreatedTransaction } from '../../lib/types';
-import { unwrap } from '../../lib/unwrap';
+import { QUEUED_MESSAGE, sendOrQueue } from '../../lib/offline';
 import { useFinanceStore } from '../../store/finance';
 
 const CATEGORIES = ['Comida', 'Súper', 'Transporte', 'Gasolina', 'Servicios', 'Salud', 'Ocio', 'Ropa', 'Casa', 'Otro'];
@@ -17,8 +16,9 @@ const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'back'] as 
  * keypad (or a physical keyboard); category, note and date are optional.
  */
 export function QuickCapture({ onClose }: { onClose: () => void }) {
-  const { accounts, overview, load } = useFinanceStore();
-  const today = overview?.today ?? new Date().toLocaleDateString('en-CA');
+  const { accounts, overview, stale, load } = useFinanceStore();
+  // A copy saved days ago would date the capture wrong: use the device's day then
+  const today = (!stale && overview?.today) || new Date().toLocaleDateString('en-CA');
   const [accountId, setAccountId] = useState<number | null>(null);
   const [amount, setAmount] = useState('');
   const [isIncome, setIsIncome] = useState(false);
@@ -46,14 +46,25 @@ export function QuickCapture({ onClose }: { onClose: () => void }) {
     if (!canSave) return;
     setSaving(true);
     try {
-      const res = await api.post('/transactions', {
-        accountId,
-        amountCents: isIncome ? cents : -cents,
-        date,
-        category: category ?? undefined,
-        description: description.trim() || undefined,
-      });
-      const created = unwrap<CreatedTransaction>(res);
+      const amountCents = isIncome ? cents : -cents;
+      const account = choices.find(a => a.id === accountId);
+      const result = await sendOrQueue<CreatedTransaction>(
+        '/transactions',
+        {
+          accountId,
+          amountCents,
+          date,
+          category: category ?? undefined,
+          description: description.trim() || undefined,
+        },
+        `${isIncome ? 'Ingreso' : 'Gasto'} ${formatCents(cents)} · ${account?.name ?? ''}${description.trim() ? ` · ${description.trim()}` : ''}`,
+      );
+      if (result.queued) {
+        toast.success(QUEUED_MESSAGE, `${formatCents(cents)} guardado`);
+        onClose();
+        return;
+      }
+      const created = result.data;
       const where = created.statement
         ? `Entra al corte del ${shortDay(created.statement.cutDate)} · pagas ${relativeDays(daysBetween(today, created.statement.paymentDate))}`
         : created.account?.name ?? '';

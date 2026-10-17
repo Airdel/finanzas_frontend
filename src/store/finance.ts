@@ -1,8 +1,7 @@
 import { create } from 'zustand';
-import { api } from '../lib/api';
 import { getErrorMessage } from '../lib/errors';
 import type { Account, CardsOverview, FixedExpense, MsiPlan, PayPeriods, SavingsOverview, Transaction } from '../lib/types';
-import { unwrap } from '../lib/unwrap';
+import { cachedGet } from '../lib/offline';
 
 interface FinanceState {
   accounts: Account[] | null;
@@ -13,6 +12,8 @@ interface FinanceState {
   savings: SavingsOverview | null;
   fixed: FixedExpense[] | null;
   error: string;
+  /** Showing the copy saved on this device because the PC didn't answer. */
+  stale: boolean;
   /** Reloads everything together: any change can move cuts, quincenas and savings. */
   load: () => Promise<void>;
 }
@@ -26,26 +27,29 @@ export const useFinanceStore = create<FinanceState>(set => ({
   savings: null,
   fixed: null,
   error: '',
+  stale: false,
   load: async () => {
     try {
-      const [accounts, overview, recent, periods, msi, savings, fixed] = await Promise.all([
-        api.get('/accounts'),
-        api.get('/cards/overview'),
-        api.get('/transactions', { params: { limit: 15 } }),
-        api.get('/pay-periods', { params: { count: 4 } }),
-        api.get('/msi'),
-        api.get('/savings'),
-        api.get('/fixed-expenses'),
+      const results = await Promise.all([
+        cachedGet<Account[]>('/accounts'),
+        cachedGet<CardsOverview>('/cards/overview'),
+        cachedGet<Transaction[]>('/transactions', { limit: 15 }),
+        cachedGet<PayPeriods>('/pay-periods', { count: 4 }),
+        cachedGet<MsiPlan[]>('/msi'),
+        cachedGet<SavingsOverview>('/savings'),
+        cachedGet<FixedExpense[]>('/fixed-expenses'),
       ]);
+      const [accounts, overview, recent, periods, msi, savings, fixed] = results;
       set({
-        accounts: unwrap<Account[]>(accounts),
-        overview: unwrap<CardsOverview>(overview),
-        recent: unwrap<Transaction[]>(recent),
-        periods: unwrap<PayPeriods>(periods),
-        msi: unwrap<MsiPlan[]>(msi),
-        savings: unwrap<SavingsOverview>(savings),
-        fixed: unwrap<FixedExpense[]>(fixed),
+        accounts: accounts.data,
+        overview: overview.data,
+        recent: recent.data,
+        periods: periods.data,
+        msi: msi.data,
+        savings: savings.data,
+        fixed: fixed.data,
         error: '',
+        stale: results.some(r => r.fromCache),
       });
     } catch (err) {
       set({ error: getErrorMessage(err, 'No se pudieron cargar los datos') });

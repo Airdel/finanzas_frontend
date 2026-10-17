@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
-import { api } from '../../lib/api';
+import { QUEUED_MESSAGE, sendOrQueue } from '../../lib/offline';
 import { notifyError, toast } from '../../lib/dialogs';
 import { formatCents, parseCents, shortDay } from '../../lib/format';
 import { useFinanceStore } from '../../store/finance';
@@ -24,8 +24,16 @@ export function PayModal({ target, onClose, onPaid }: { target: PayTarget; onClo
     if (!(cents > 0)) return;
     setSaving(true);
     try {
-      await api.post(`/cards/${target.accountId}/payments`, { cutDate: target.cutDate, amountCents: cents });
-      toast.success(`${target.accountName} · corte del ${shortDay(target.cutDate)}`, `Pago de ${formatCents(cents)} registrado`);
+      const result = await sendOrQueue(
+        `/cards/${target.accountId}/payments`,
+        // Dated now, so a payment sent later keeps the day it was made
+        { cutDate: target.cutDate, amountCents: cents, date: new Date().toLocaleDateString('en-CA') },
+        `Pago ${formatCents(cents)} · ${target.accountName} corte ${shortDay(target.cutDate)}`,
+      );
+      toast.success(
+        result.queued ? QUEUED_MESSAGE : `${target.accountName} · corte del ${shortDay(target.cutDate)}`,
+        `Pago de ${formatCents(cents)} registrado`,
+      );
       onPaid?.();
       onClose();
       void load();
