@@ -142,14 +142,17 @@ export function QuincenasView() {
         {savings && savings.recent.length > 0 && (
           <div className="glass-panel divide-y divide-ink/5">
             {savings.recent.slice(0, 10).map(m => {
-              const label = m.flow === 'TUTORIA' ? 'Tutoría' : `Ahorro nómina ${m.payPeriod ? shortDay(m.payPeriod.payDate) : ''}`;
+              const label =
+                m.flow === 'TUTORIA' ? 'Tutoría' : m.flow === 'AJUSTE' ? 'Ajuste por corte de saldos' : `Ahorro nómina ${m.payPeriod ? shortDay(m.payPeriod.payDate) : ''}`;
               return (
                 <div key={m.id} className="px-4 py-2 flex items-center gap-3 text-sm">
                   <div className="flex-1 min-w-0">
                     <p className="truncate">{label}</p>
                     <p className="text-xs text-ink/40">{shortDay(m.date)} · {m.toAccount.name}</p>
                   </div>
-                  <span className="font-mono text-secondary">+{formatCents(m.amountCents)}</span>
+                  <span className={m.amountCents < 0 ? 'font-mono text-ink/60' : 'font-mono text-secondary'}>
+                    {m.amountCents < 0 ? '−' : '+'}{formatCents(Math.abs(m.amountCents))}
+                  </span>
                   <button onClick={() => removeSaving(m.id, `${label} · ${formatCents(m.amountCents)}`)} className="p-1.5 text-ink/30 hover:text-error" aria-label="Deshacer">
                     <Trash2 className="w-4 h-4" />
                   </button>

@@ -195,7 +195,8 @@ export interface PayPeriods {
 export interface SavingsMovement {
   id: number;
   date: string;
-  flow: 'NOMINA' | 'TUTORIA';
+  /** AJUSTE: corte de saldos (puede ser negativo) */
+  flow: 'NOMINA' | 'TUTORIA' | 'AJUSTE';
   amountCents: number;
   toAccount: { id: number; name: string; slug: string };
   payPeriod: { payDate: string } | null;
@@ -214,4 +215,34 @@ export interface FixedExpense {
   dayOfMonth: number;
   accountId: number | null;
   account: { id: number; name: string } | null;
+}
+
+export interface BalanceSnapshot {
+  id: number;
+  date: string;
+  accountId: number;
+  balanceCents: number;
+  adjustmentCents: number;
+  note: string | null;
+}
+
+export interface BalanceAccount {
+  id: number;
+  slug: string;
+  name: string;
+  kind: AccountKind;
+  /** Cards: debt today · savings: sum of movements · debit: not tracked */
+  appCents: number | null;
+  last: BalanceSnapshot | null;
+}
+
+export interface BalancesOverview {
+  today: string;
+  lastDate: string | null;
+  accounts: BalanceAccount[];
+}
+
+export interface BalanceCutResult {
+  date: string;
+  results: { accountId: number; name: string; paidCents: number; adjustmentCents: number; appCents: number }[];
 }
