@@ -41,6 +41,8 @@ jobs:
       - run: npm run build
         env:
           VITE_APP_VERSION: 1.0.${{ github.run_number }}
+          # Fresh installs start with the server already filled in (same as Pages)
+          VITE_API_URL: ${{ vars.API_URL }}
       - run: npx cap sync android
       # Same signing key on every run so new APKs install over the old one
       - name: Restore signing key
