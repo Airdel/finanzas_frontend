@@ -200,7 +200,8 @@ function PeriodCard({ period: p, today, expanded, onToggle, onEdit, onDisperse }
 }) {
   const current = p.payDate <= today && today < p.endDate;
   const toSave = Math.max(0, p.savingsCents - p.savedCents);
-  const dispersed = p.cardsPendingCents === 0 && toSave === 0;
+  // A corte de saldos inside the quincena already counted where its money went
+  const dispersed = !!p.balanceCut || (p.cardsPendingCents === 0 && toSave === 0);
   return (
     <div className={cn('glass-panel', current && 'border-primary/40')}>
       <button onClick={onToggle} className="w-full p-4 flex items-center justify-between gap-3 text-left">
