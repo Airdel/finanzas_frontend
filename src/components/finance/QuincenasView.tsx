@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check, ChevronDown, GraduationCap, Send, Loader2, PiggyBank, Plus, Receipt, Settings2, Trash2, Wallet } from 'lucide-react';
 import { Modal } from '../ui/Modal';
-import { Field, Segmented, SubmitButton } from '../ui/Field';
+import { Field, Segmented, SelectField, SubmitButton } from '../ui/Field';
 import { StatusBadge } from './StatusBadge';
 import { api } from '../../lib/api';
 import { cn } from '../../lib/cn';
@@ -164,9 +164,9 @@ export function QuincenasView() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-label text-ink/50 text-xs uppercase tracking-wider flex items-center gap-2"><Receipt className="w-4 h-4" /> Fijos pagados desde cuenta</h2>
+        <h2 className="font-label text-ink/50 text-xs uppercase tracking-wider flex items-center gap-2"><Receipt className="w-4 h-4" /> Gastos fijos</h2>
         <div className="glass-panel divide-y divide-ink/5">
-          {(fixed ?? []).length === 0 && <p className="p-4 text-sm text-ink/40 text-center">Sin fijos. Lo que pagas con tarjeta ya cuenta en su corte.</p>}
+          {(fixed ?? []).length === 0 && <p className="p-4 text-sm text-ink/40 text-center">Sin fijos. Los de tarjeta se cargan solos a su corte el día que tocan.</p>}
           {(fixed ?? []).map(f => (
             <div key={f.id} className="px-4 py-2 flex items-center gap-3 text-sm">
               <div className="flex-1 min-w-0">
@@ -387,7 +387,9 @@ function FixedForm() {
   const [amount, setAmount] = useState('');
   const [day, setDay] = useState('');
   const [busy, setBusy] = useState(false);
-  const debit = (accounts ?? []).find(a => a.kind === 'DEBIT');
+  const payable = (accounts ?? []).filter(a => a.kind === 'DEBIT' || a.kind === 'CREDIT_CARD');
+  const [accountId, setAccountId] = useState('');
+  const account = payable.find(a => String(a.id) === accountId) ?? payable.find(a => a.kind === 'DEBIT') ?? payable[0];
   const cents = parseCents(amount);
   const d = Number(day);
   const valid = name.trim() && cents > 0 && d >= 1 && d <= 31;
@@ -396,7 +398,7 @@ function FixedForm() {
     if (!valid) return;
     setBusy(true);
     try {
-      await api.post('/fixed-expenses', { name: name.trim(), amountCents: cents, dayOfMonth: d, accountId: debit?.id });
+      await api.post('/fixed-expenses', { name: name.trim(), amountCents: cents, dayOfMonth: d, accountId: account?.id });
       setName('');
       setAmount('');
       setDay('');
@@ -423,7 +425,9 @@ function FixedForm() {
         <Field label="Monto" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} />
         <Field label="Día" inputMode="numeric" value={day} onChange={e => setDay(e.target.value.replace(/\D/g, ''))} />
       </div>
-      <SubmitButton onClick={save} disabled={!valid} busy={busy}>Guardar fijo{debit ? ` (desde ${debit.name})` : ''}</SubmitButton>
+      <SelectField label="Se paga con" value={account ? String(account.id) : ''} onChange={setAccountId} options={payable.map(a => ({ value: String(a.id), label: a.name }))} />
+      {account?.kind === 'CREDIT_CARD' && <p className="text-xs text-ink/50">Se carga solo a {account.name} el día {d || '…'} de cada mes, a partir de mañana. No lo captures a mano.</p>}
+      <SubmitButton onClick={save} disabled={!valid} busy={busy}>Guardar fijo</SubmitButton>
     </div>
   );
 }
